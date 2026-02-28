@@ -23,6 +23,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { smmApi } from "./services/api";
 import { Service, BalanceResponse } from "./types";
+import { MOCK_SERVICES, MOCK_BALANCE } from "./mockData";
 
 type Page = "new-order" | "services" | "orders" | "add-funds" | "support";
 
@@ -32,6 +33,7 @@ export default function App() {
   const [balance, setBalance] = useState<BalanceResponse | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -52,9 +54,13 @@ export default function App() {
 
         setBalance(balanceData);
         setServices(servicesData);
+        setIsDemoMode(false);
         setApiError(null);
       } catch (err: any) {
-        console.error("API Error:", err);
+        console.error("API Error, switching to Demo Mode:", err);
+        setBalance(MOCK_BALANCE);
+        setServices(MOCK_SERVICES);
+        setIsDemoMode(true);
         setApiError(err.message || "Failed to connect to MotherPanel API");
       } finally {
         setLoading(false);
@@ -150,6 +156,19 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-6">
+            {isDemoMode && (
+              <div className="hidden md:flex flex-col items-end">
+                <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200">
+                  <AlertCircle size={12} />
+                  Demo Mode
+                </div>
+                {apiError && (
+                  <span className="text-[9px] text-rose-500 mt-1 font-medium max-w-[150px] truncate">
+                    Error: {apiError}
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex flex-col items-end">
               <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Balance</span>
               <span className="text-sm font-bold text-emerald-600">
@@ -173,24 +192,6 @@ export default function App() {
             <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
               <Loader2 className="animate-spin text-emerald-500" size={40} />
               <p className="text-slate-500 font-medium">Loading BD Service Dashboard...</p>
-            </div>
-          ) : apiError ? (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center space-y-4">
-              <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center">
-                <AlertCircle size={32} />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800">Connection Failed</h3>
-              <p className="text-slate-500 max-w-md">
-                {apiError === "API_KEY_MISSING" 
-                  ? "Please set your MOTHERPANEL_API_KEY in the Secrets panel." 
-                  : `Error: ${apiError}`}
-              </p>
-              <button 
-                onClick={() => window.location.reload()}
-                className="px-6 py-2 bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all"
-              >
-                Try Again
-              </button>
             </div>
           ) : (
             <AnimatePresence mode="wait">
